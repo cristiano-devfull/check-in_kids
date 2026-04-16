@@ -200,20 +200,17 @@ export default function EstacaoPage() {
 
         body {
           background: #1A1A2E !important;
-          overflow: hidden;
+          overflow: auto !important;
           padding-bottom: 0 !important;
         }
 
         .estacao-root {
           min-height: 100vh;
-          height: 100vh;
           background: linear-gradient(160deg, #1A1A2E 0%, #0F3460 50%, #1A1A2E 100%);
           display: flex;
           flex-direction: column;
-          padding: 0 32px 16px;
-          overflow: hidden;
-          position: fixed;
-          inset: 0;
+          padding: 0 32px 32px;
+          position: relative;
           z-index: 10;
         }
 

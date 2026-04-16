@@ -40,22 +40,11 @@ export default function LoginPage() {
   return (
     <div className="page-container-narrow" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <div className="card card-elevated" style={{ width: '100%', animation: 'slideUp 0.6s var(--ease-spring)' }}>
-        <div style={{ textAlign: 'center', marginBottom: 'var(--space-8)' }}>
-          <div style={{
-            width: '64px',
-            height: '64px',
-            margin: '0 auto var(--space-4)',
-            background: 'linear-gradient(135deg, var(--color-primary-500), var(--color-primary-700))',
-            borderRadius: 'var(--radius-sm)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '32px',
-            boxShadow: 'var(--shadow-md)'
-          }}>
+        <div style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>
+          <div className="nav-brand-icon" style={{ margin: '0 auto var(--space-4)', width: '64px', height: '64px', fontSize: '32px' }}>
             🛡️
           </div>
-          <h1 style={{ fontSize: 'var(--text-3xl)', marginBottom: 'var(--space-2)' }}>Acesso Restrito</h1>
+          <h1 style={{ marginBottom: 'var(--space-2)' }}>Acesso Restrito</h1>
           <p style={{ fontSize: 'var(--text-sm)' }}>Identifique-se para acessar o painel administrativo</p>
         </div>
 

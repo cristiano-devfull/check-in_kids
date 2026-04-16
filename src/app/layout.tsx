@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Link from "next/link";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -21,22 +22,42 @@ export default function RootLayout({
     <html lang="pt-BR">
       <body>
         <nav className="nav" role="navigation" aria-label="Navegação principal">
-          <a href="/" className="nav-brand" aria-label="CheckKids - Página inicial">
+          <Link href="/" className="nav-brand">
             <div className="nav-brand-icon" aria-hidden="true">🛡️</div>
             <div className="nav-brand-text">
               Check<span>Kids</span>
             </div>
-          </a>
+          </Link>
           <div className="nav-links">
-            <a href="/checkin" className="nav-link" id="nav-checkin">📱 Entrada</a>
-            <a href="/checkout" className="nav-link" id="nav-checkout">🚪 Saída</a>
-            <a href="/estacao" className="nav-link" id="nav-estacao" style={{fontWeight: 700, color: 'var(--color-primary-800)'}}>🖥️ Estação</a>
-            <a href="/admin" className="nav-link" id="nav-admin">⚙️ Painel</a>
+            <Link href="/checkin" className="nav-link" id="nav-checkin">📱 Entrada</Link>
+            <Link href="/checkout" className="nav-link" id="nav-checkout">🚪 Saída</Link>
+            <Link href="/estacao" className="nav-link" id="nav-estacao" style={{fontWeight: 700, color: 'var(--color-primary-800)'}}>🖥️ Estação</Link>
+            <Link href="/admin" className="nav-link" id="nav-admin">⚙️ Painel</Link>
           </div>
         </nav>
         <main>
           {children}
         </main>
+        
+        {/* Mobile Bottom Navigation */}
+        <nav className="bottom-nav" aria-label="Navegação móvel">
+          <Link href="/checkin" className="bottom-nav-item" id="mobile-nav-checkin">
+            <span className="bottom-nav-icon">📱</span>
+            <span>Entrada</span>
+          </Link>
+          <Link href="/checkout" className="bottom-nav-item" id="mobile-nav-checkout">
+            <span className="bottom-nav-icon">🚪</span>
+            <span>Saída</span>
+          </Link>
+          <Link href="/estacao" className="bottom-nav-item" id="mobile-nav-estacao">
+            <span className="bottom-nav-icon">🖥️</span>
+            <span>Estação</span>
+          </Link>
+          <Link href="/admin" className="bottom-nav-item" id="mobile-nav-admin">
+            <span className="bottom-nav-icon">⚙️</span>
+            <span>Painel</span>
+          </Link>
+        </nav>
       </body>
     </html>
   );

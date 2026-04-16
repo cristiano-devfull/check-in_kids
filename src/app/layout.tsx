@@ -22,17 +22,19 @@ export default function RootLayout({
     <html lang="pt-BR">
       <body>
         <nav className="nav" role="navigation" aria-label="Navegação principal">
-          <Link href="/" className="nav-brand">
-            <div className="nav-brand-icon" aria-hidden="true">🛡️</div>
-            <div className="nav-brand-text">
-              Check<span>Kids</span>
+          <div className="nav-container">
+            <Link href="/" className="nav-brand">
+              <div className="nav-brand-icon" aria-hidden="true">🛡️</div>
+              <div className="nav-brand-text">
+                Check<span>Kids</span>
+              </div>
+            </Link>
+            <div className="nav-links">
+              <Link href="/checkin" className="nav-link" id="nav-checkin">📱 Entrada</Link>
+              <Link href="/checkout" className="nav-link" id="nav-checkout">🚪 Saída</Link>
+              <Link href="/estacao" className="nav-link" id="nav-estacao" style={{fontWeight: 700, color: 'var(--color-primary-800)'}}>🖥️ Estação</Link>
+              <Link href="/admin" className="nav-link" id="nav-admin">⚙️ Painel</Link>
             </div>
-          </Link>
-          <div className="nav-links">
-            <Link href="/checkin" className="nav-link" id="nav-checkin">📱 Entrada</Link>
-            <Link href="/checkout" className="nav-link" id="nav-checkout">🚪 Saída</Link>
-            <Link href="/estacao" className="nav-link" id="nav-estacao" style={{fontWeight: 700, color: 'var(--color-primary-800)'}}>🖥️ Estação</Link>
-            <Link href="/admin" className="nav-link" id="nav-admin">⚙️ Painel</Link>
           </div>
         </nav>
         <main>

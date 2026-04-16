@@ -194,13 +194,14 @@ export default function EstacaoPage() {
 
       {/* Styles */}
       <style>{`
+        nav.nav, .bottom-nav {
+          display: none !important;
+        }
+
         body {
           background: #1A1A2E !important;
           overflow: hidden;
-        }
-
-        nav.nav {
-          display: none !important;
+          padding-bottom: 0 !important;
         }
 
         .estacao-root {

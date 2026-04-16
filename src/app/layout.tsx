@@ -6,6 +6,10 @@ export const metadata: Metadata = {
   title: "CheckKids - Controle de Entrada e Saída de Crianças",
   description: "Sistema seguro de check-in e check-out de crianças via QR Code para brinquedotecas, escolas, buffets infantis e espaços recreativos.",
   keywords: "check-in, crianças, segurança, QR Code, brinquedoteca, escola, buffet infantil",
+  icons: {
+    icon: "/icon.png",
+    apple: "/icon.png",
+  },
 };
 
 export const viewport: Viewport = {

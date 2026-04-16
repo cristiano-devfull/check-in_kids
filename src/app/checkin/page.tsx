@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { Guardian, Child, CheckIn } from '@/lib/types';
 
@@ -39,7 +39,7 @@ const STEPS: { key: Step; label: string }[] = [
   { key: 'confirmation', label: 'Confirmação' },
 ];
 
-export default function CheckInPage() {
+function CheckInContent() {
   const searchParams = useSearchParams();
   const orgId = searchParams.get('orgId');
 
@@ -109,7 +109,7 @@ export default function CheckInPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery]);
+  }, [searchQuery, orgId]);
 
   const handleRegister = useCallback(async () => {
     if (!form.full_name || !form.phone || !form.email) {
@@ -176,7 +176,7 @@ export default function CheckInPage() {
     } finally {
       setLoading(false);
     }
-  }, [form]);
+  }, [form, orgId]);
 
   const handleSelectExistingChild = useCallback((child: Child) => {
     setSelectedChild(child);
@@ -222,7 +222,7 @@ export default function CheckInPage() {
     } finally {
       setLoading(false);
     }
-  }, [consentAccepted, guardian, selectedChild]);
+  }, [consentAccepted, guardian, selectedChild, orgId]);
 
   const handleReset = () => {
     setStep('search');
@@ -656,5 +656,13 @@ export default function CheckInPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function CheckInPage() {
+  return (
+    <Suspense fallback={<div className="loading-screen"><div className="spinner" /><p>Carregando...</p></div>}>
+      <CheckInContent />
+    </Suspense>
   );
 }

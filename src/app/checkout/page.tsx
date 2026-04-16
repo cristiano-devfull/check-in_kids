@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import type { Guardian, CheckInWithDetails } from '@/lib/types';
 
@@ -13,7 +13,7 @@ const STEPS: { key: Step; label: string }[] = [
   { key: 'done', label: 'Concluído' },
 ];
 
-export default function CheckOutPage() {
+function CheckOutContent() {
   const searchParams = useSearchParams();
   const orgId = searchParams.get('orgId');
 
@@ -71,7 +71,7 @@ export default function CheckOutPage() {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery]);
+  }, [searchQuery, orgId]);
 
   const handleSelectCheckin = useCallback((checkin: CheckInWithDetails) => {
     setSelectedCheckin(checkin);
@@ -116,7 +116,7 @@ export default function CheckOutPage() {
     } finally {
       setLoading(false);
     }
-  }, [confirmChecked, selectedCheckin, guardian]);
+  }, [confirmChecked, selectedCheckin, guardian, orgId]);
 
   const handleReset = () => {
     setStep('identify');
@@ -356,5 +356,13 @@ export default function CheckOutPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function CheckOutPage() {
+  return (
+    <Suspense fallback={<div className="loading-screen"><div className="spinner" /><p>Carregando...</p></div>}>
+      <CheckOutContent />
+    </Suspense>
   );
 }

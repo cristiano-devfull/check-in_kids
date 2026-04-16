@@ -1,5 +1,22 @@
+export interface Organization {
+  id: string;
+  name: string;
+  slug?: string;
+  logo_url?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Profile {
+  id: string;
+  organization_id: string | null;
+  full_name: string;
+  updated_at: string;
+}
+
 export interface Guardian {
   id: string;
+  organization_id: string;
   full_name: string;
   phone: string;
   email: string;
@@ -9,6 +26,7 @@ export interface Guardian {
 
 export interface Child {
   id: string;
+  organization_id: string;
   guardian_id: string;
   name: string;
   age: number;
@@ -23,6 +41,7 @@ export interface Child {
 
 export interface CheckIn {
   id: string;
+  organization_id: string;
   child_id: string;
   guardian_id: string;
   checkin_time: string;
@@ -45,6 +64,7 @@ export interface CheckInWithDetails extends CheckIn {
 
 export interface AuditLog {
   id: number;
+  organization_id: string;
   action: string;
   entity_type: string;
   entity_id: string;

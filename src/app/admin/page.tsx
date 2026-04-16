@@ -1,6 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { createClient } from '@/utils/supabase/client';
+import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import type { DashboardStats, CheckInWithDetails } from '@/lib/types';
 
 type Tab = 'dashboard' | 'history';
@@ -8,12 +11,22 @@ type Tab = 'dashboard' | 'history';
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>('dashboard');
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [orgName, setOrgName] = useState('Painel Administrativo');
   const [history, setHistory] = useState<CheckInWithDetails[]>([]);
   const [dateFilter, setDateFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [qrCodes, setQrCodes] = useState<{ checkin?: string; checkout?: string }>({});
   const [showQR, setShowQR] = useState(false);
+  
+  const router = useRouter();
+  const supabase = createClient();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
+  };
 
   const fetchDashboard = useCallback(async () => {
     try {
@@ -21,6 +34,7 @@ export default function AdminPage() {
       const data = await res.json();
       if (data.success) {
         setStats(data.data);
+        if (data.orgName) setOrgName(data.orgName);
       }
     } catch {
       setError('Erro ao carregar dashboard.');
@@ -28,6 +42,7 @@ export default function AdminPage() {
       setLoading(false);
     }
   }, []);
+
 
   const fetchHistory = useCallback(async () => {
     setLoading(true);
@@ -98,9 +113,27 @@ export default function AdminPage() {
 
   return (
     <div className="page-container">
-      <div className="page-header">
-        <h1>⚙️ Painel Administrativo</h1>
-        <p>Controle e monitore todas as crianças no estabelecimento</p>
+      <div className="page-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', textAlign: 'left', flexWrap: 'wrap', gap: 'var(--space-4)' }}>
+        <div>
+          <h1>⚙️ {orgName}</h1>
+          <p>Painel Administrativo para controle de crianças</p>
+        </div>
+        <div style={{ display: 'flex', gap: 'var(--space-2)' }}>
+          <Link 
+            href="/admin/settings" 
+            className="btn btn-outline"
+            style={{ minHeight: '44px', padding: 'var(--space-2) var(--space-4)', fontSize: 'var(--text-sm)', display: 'flex', alignItems: 'center', gap: '8px' }}
+          >
+            ⚙️ <span className="hide-mobile">Configurações</span>
+          </Link>
+          <button 
+            onClick={handleLogout}
+            className="btn btn-outline" 
+            style={{ minHeight: '44px', padding: 'var(--space-2) var(--space-4)', fontSize: 'var(--text-sm)' }}
+          >
+            🚪 Sair
+          </button>
+        </div>
       </div>
 
       {/* Station CTA */}

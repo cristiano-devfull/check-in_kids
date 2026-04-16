@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import type { Guardian, CheckInWithDetails } from '@/lib/types';
 
 type Step = 'identify' | 'select' | 'confirm' | 'done';
@@ -13,6 +14,9 @@ const STEPS: { key: Step; label: string }[] = [
 ];
 
 export default function CheckOutPage() {
+  const searchParams = useSearchParams();
+  const orgId = searchParams.get('orgId');
+
   const [step, setStep] = useState<Step>('identify');
   const [searchQuery, setSearchQuery] = useState('');
   const [guardian, setGuardian] = useState<Guardian | null>(null);
@@ -21,6 +25,12 @@ export default function CheckOutPage() {
   const [confirmChecked, setConfirmChecked] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    if (!orgId) {
+      setError('ID da organização não encontrado. Por favor, escaneie o QR Code novamente.');
+    }
+  }, [orgId]);
 
   const currentStepIndex = STEPS.findIndex(s => s.key === step);
 
@@ -36,7 +46,7 @@ export default function CheckOutPage() {
     try {
       const isEmail = searchQuery.includes('@');
       const param = isEmail ? `email=${encodeURIComponent(searchQuery)}` : `phone=${encodeURIComponent(searchQuery)}`;
-      const res = await fetch(`/api/guardians?${param}`);
+      const res = await fetch(`/api/guardians?${param}&org_id=${orgId}`);
       const data = await res.json();
 
       if (!data.success || !data.data) {
@@ -46,7 +56,7 @@ export default function CheckOutPage() {
 
       setGuardian(data.data);
 
-      const checkinsRes = await fetch(`/api/checkins?type=active&guardian_id=${data.data.id}`);
+      const checkinsRes = await fetch(`/api/checkins?type=active&guardian_id=${data.data.id}&org_id=${orgId}`);
       const checkinsData = await checkinsRes.json();
 
       if (!checkinsData.success || !checkinsData.data.length) {
@@ -90,6 +100,7 @@ export default function CheckOutPage() {
           action: 'checkout',
           checkin_id: selectedCheckin.id,
           guardian_id: guardian.id,
+          org_id: orgId,
         }),
       });
       const data = await res.json();

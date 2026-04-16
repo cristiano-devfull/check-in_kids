@@ -1,13 +1,59 @@
 import { supabase } from './database';
 import { v4 as uuidv4 } from 'uuid';
-import type { Guardian, Child, CheckIn, CheckInWithDetails, DashboardStats, AuditLog } from './types';
+import type { 
+  Guardian, 
+  Child, 
+  CheckIn, 
+  CheckInWithDetails, 
+  DashboardStats, 
+  AuditLog,
+  Profile,
+  Organization
+} from './types';
+
+// ── Auth & Organization Helpers ──
+
+export async function getUserProfile(userId: string): Promise<Profile | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('*')
+    .eq('id', userId)
+    .single();
+  
+  if (error || !data) return null;
+  return data as Profile;
+}
+
+export async function getOrganization(orgId: string): Promise<Organization | null> {
+  const { data, error } = await supabase
+    .from('organizations')
+    .select('*')
+    .eq('id', orgId)
+    .single();
+  
+  if (error || !data) return null;
+  return data as Organization;
+}
+
+export async function updateOrganization(orgId: string, data: Partial<Organization>): Promise<Organization> {
+  const { data: org, error } = await supabase
+    .from('organizations')
+    .update({ ...data, updated_at: new Date().toISOString() })
+    .eq('id', orgId)
+    .select()
+    .single();
+
+  if (error) throw new Error(`Erro ao atualizar organização: ${error.message}`);
+  return org as Organization;
+}
 
 // ── Guardian Operations ──
 
-export async function findGuardianByPhone(phone: string): Promise<Guardian | undefined> {
+export async function findGuardianByPhone(orgId: string, phone: string): Promise<Guardian | undefined> {
   const { data, error } = await supabase
     .from('guardians')
     .select('*')
+    .eq('organization_id', orgId)
     .eq('phone', phone)
     .single();
   
@@ -15,10 +61,11 @@ export async function findGuardianByPhone(phone: string): Promise<Guardian | und
   return data as Guardian;
 }
 
-export async function findGuardianByEmail(email: string): Promise<Guardian | undefined> {
+export async function findGuardianByEmail(orgId: string, email: string): Promise<Guardian | undefined> {
   const { data, error } = await supabase
     .from('guardians')
     .select('*')
+    .eq('organization_id', orgId)
     .eq('email', email)
     .single();
   
@@ -26,10 +73,11 @@ export async function findGuardianByEmail(email: string): Promise<Guardian | und
   return data as Guardian;
 }
 
-export async function searchGuardians(query: string): Promise<Guardian[]> {
+export async function searchGuardians(orgId: string, query: string): Promise<Guardian[]> {
   const { data, error } = await supabase
     .from('guardians')
     .select('*')
+    .eq('organization_id', orgId)
     .or(`phone.ilike.%${query}%,email.ilike.%${query}%,full_name.ilike.%${query}%`)
     .limit(10);
   
@@ -37,11 +85,11 @@ export async function searchGuardians(query: string): Promise<Guardian[]> {
   return data as Guardian[];
 }
 
-export async function createGuardian(data: { full_name: string; phone: string; email: string }): Promise<Guardian> {
+export async function createGuardian(orgId: string, data: { full_name: string; phone: string; email: string }): Promise<Guardian> {
   const id = uuidv4();
   const { data: guardian, error } = await supabase
     .from('guardians')
-    .insert([{ id, ...data }])
+    .insert([{ id, organization_id: orgId, ...data }])
     .select()
     .single();
 
@@ -49,11 +97,12 @@ export async function createGuardian(data: { full_name: string; phone: string; e
   return guardian as Guardian;
 }
 
-export async function updateGuardian(id: string, data: Partial<Guardian>): Promise<Guardian> {
+export async function updateGuardian(orgId: string, id: string, data: Partial<Guardian>): Promise<Guardian> {
   const { data: guardian, error } = await supabase
     .from('guardians')
     .update({ ...data, updated_at: new Date().toISOString() })
     .eq('id', id)
+    .eq('organization_id', orgId)
     .select()
     .single();
 
@@ -63,17 +112,18 @@ export async function updateGuardian(id: string, data: Partial<Guardian>): Promi
 
 // ── Children Operations ──
 
-export async function getChildrenByGuardian(guardianId: string): Promise<Child[]> {
+export async function getChildrenByGuardian(orgId: string, guardianId: string): Promise<Child[]> {
   const { data, error } = await supabase
     .from('children')
     .select('*')
+    .eq('organization_id', orgId)
     .eq('guardian_id', guardianId);
   
   if (error || !data) return [];
   return data as Child[];
 }
 
-export async function createChild(data: {
+export async function createChild(orgId: string, data: {
   guardian_id: string;
   name: string;
   age: number;
@@ -86,7 +136,7 @@ export async function createChild(data: {
   const id = uuidv4();
   const { data: child, error } = await supabase
     .from('children')
-    .insert([{ id, ...data }])
+    .insert([{ id, organization_id: orgId, ...data }])
     .select()
     .single();
 
@@ -94,11 +144,12 @@ export async function createChild(data: {
   return child as Child;
 }
 
-export async function updateChild(id: string, data: Partial<Child>): Promise<Child> {
+export async function updateChild(orgId: string, id: string, data: Partial<Child>): Promise<Child> {
   const { data: child, error } = await supabase
     .from('children')
     .update({ ...data, updated_at: new Date().toISOString() })
     .eq('id', id)
+    .eq('organization_id', orgId)
     .select()
     .single();
 
@@ -117,27 +168,29 @@ function generateUniqueCode(): string {
   return code;
 }
 
-export async function createCheckIn(data: { child_id: string; guardian_id: string }): Promise<CheckIn> {
+export async function createCheckIn(orgId: string, data: { child_id: string; guardian_id: string }): Promise<CheckIn> {
   const id = uuidv4();
   const uniqueCode = generateUniqueCode();
   const now = new Date().toISOString();
 
-  // Check for existing active check-in
+  // Check for existing active check-in in THIS organization
   const { data: existing } = await supabase
     .from('checkins')
     .select('id')
+    .eq('organization_id', orgId)
     .eq('child_id', data.child_id)
     .eq('status', 'active')
     .single();
 
   if (existing) {
-    throw new Error('Esta criança já possui um check-in ativo.');
+    throw new Error('Esta criança já possui um check-in ativo neste estabelecimento.');
   }
 
   const { data: checkin, error } = await supabase
     .from('checkins')
     .insert([{
       id,
+      organization_id: orgId,
       child_id: data.child_id,
       guardian_id: data.guardian_id,
       checkin_time: now,
@@ -151,18 +204,19 @@ export async function createCheckIn(data: { child_id: string; guardian_id: strin
 
   if (error) throw new Error(`Erro ao realizar check-in: ${error.message}`);
 
-  await logAudit('CHECK_IN', 'checkins', id, data.guardian_id, `Check-in criado para criança ${data.child_id}`);
+  await logAudit(orgId, 'CHECK_IN', 'checkins', id, data.guardian_id, `Check-in criado p/ criança ${data.child_id}`);
 
   return checkin as CheckIn;
 }
 
-export async function processCheckOut(checkinId: string, guardianId: string): Promise<CheckIn> {
+export async function processCheckOut(orgId: string, checkinId: string, guardianId: string): Promise<CheckIn> {
   const now = new Date().toISOString();
 
   const { data: checkin, error: fetchError } = await supabase
     .from('checkins')
     .select('*')
     .eq('id', checkinId)
+    .eq('organization_id', orgId)
     .eq('status', 'active')
     .single();
 
@@ -178,17 +232,18 @@ export async function processCheckOut(checkinId: string, guardianId: string): Pr
     .from('checkins')
     .update({ checkout_time: now, status: 'completed' })
     .eq('id', checkinId)
+    .eq('organization_id', orgId)
     .select()
     .single();
 
   if (updateError) throw new Error(`Erro ao realizar check-out: ${updateError.message}`);
 
-  await logAudit('CHECK_OUT', 'checkins', checkinId, guardianId, `Check-out realizado`);
+  await logAudit(orgId, 'CHECK_OUT', 'checkins', checkinId, guardianId, `Check-out realizado`);
 
   return updated as CheckIn;
 }
 
-export async function getActiveCheckIns(): Promise<CheckInWithDetails[]> {
+export async function getActiveCheckIns(orgId: string): Promise<CheckInWithDetails[]> {
   const { data, error } = await supabase
     .from('checkins')
     .select(`
@@ -196,12 +251,12 @@ export async function getActiveCheckIns(): Promise<CheckInWithDetails[]> {
       children (name, age, gender),
       guardians (full_name, phone, email)
     `)
+    .eq('organization_id', orgId)
     .eq('status', 'active')
     .order('checkin_time', { ascending: false });
 
   if (error || !data) return [];
   
-  // Flattening the relation data for the UI
   return data.map((item: any) => ({
     ...item,
     child_name: item.children.name,
@@ -213,7 +268,7 @@ export async function getActiveCheckIns(): Promise<CheckInWithDetails[]> {
   })) as CheckInWithDetails[];
 }
 
-export async function getActiveCheckInsByGuardian(guardianId: string): Promise<CheckInWithDetails[]> {
+export async function getActiveCheckInsByGuardian(orgId: string, guardianId: string): Promise<CheckInWithDetails[]> {
   const { data, error } = await supabase
     .from('checkins')
     .select(`
@@ -221,6 +276,7 @@ export async function getActiveCheckInsByGuardian(guardianId: string): Promise<C
       children (name, age, gender),
       guardians (full_name, phone, email)
     `)
+    .eq('organization_id', orgId)
     .eq('status', 'active')
     .eq('guardian_id', guardianId)
     .order('checkin_time', { ascending: false });
@@ -238,14 +294,15 @@ export async function getActiveCheckInsByGuardian(guardianId: string): Promise<C
   })) as CheckInWithDetails[];
 }
 
-export async function getCheckInHistory(date?: string): Promise<CheckInWithDetails[]> {
+export async function getCheckInHistory(orgId: string, date?: string): Promise<CheckInWithDetails[]> {
   let queryBuilder = supabase
     .from('checkins')
     .select(`
       *,
       children (name, age, gender),
       guardians (full_name, phone, email)
-    `);
+    `)
+    .eq('organization_id', orgId);
 
   if (date) {
     queryBuilder = queryBuilder.gte('checkin_time', `${date}T00:00:00Z`).lte('checkin_time', `${date}T23:59:59Z`);
@@ -270,14 +327,14 @@ export async function getCheckInHistory(date?: string): Promise<CheckInWithDetai
 
 // ── Dashboard ──
 
-export async function getDashboardStats(): Promise<DashboardStats> {
+export async function getDashboardStats(orgId: string): Promise<DashboardStats> {
   const today = new Date().toISOString().split('T')[0];
 
   const [presentCount, todayCheckins, todayCheckouts, activeList] = await Promise.all([
-    supabase.from('checkins').select('*', { count: 'exact', head: true }).eq('status', 'active'),
-    supabase.from('checkins').select('*', { count: 'exact', head: true }).gte('checkin_time', `${today}T00:00:00Z`),
-    supabase.from('checkins').select('*', { count: 'exact', head: true }).eq('status', 'completed').gte('checkout_time', `${today}T00:00:00Z`),
-    getActiveCheckIns()
+    supabase.from('checkins').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'active'),
+    supabase.from('checkins').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).gte('checkin_time', `${today}T00:00:00Z`),
+    supabase.from('checkins').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'completed').gte('checkout_time', `${today}T00:00:00Z`),
+    getActiveCheckIns(orgId)
   ]);
 
   return {
@@ -291,6 +348,7 @@ export async function getDashboardStats(): Promise<DashboardStats> {
 // ── Audit ──
 
 export async function logAudit(
+  orgId: string,
   action: string,
   entityType: string,
   entityId: string,
@@ -301,6 +359,7 @@ export async function logAudit(
   await supabase
     .from('audit_logs')
     .insert([{
+      organization_id: orgId,
       action,
       entity_type: entityType,
       entity_id: entityId,
@@ -310,10 +369,11 @@ export async function logAudit(
     }]);
 }
 
-export async function getAuditLogs(limit = 100): Promise<AuditLog[]> {
+export async function getAuditLogs(orgId: string, limit = 100): Promise<AuditLog[]> {
   const { data, error } = await supabase
     .from('audit_logs')
     .select('*')
+    .eq('organization_id', orgId)
     .order('created_at', { ascending: false })
     .limit(limit);
   

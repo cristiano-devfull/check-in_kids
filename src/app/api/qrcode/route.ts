@@ -1,11 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import QRCode from 'qrcode';
+import { getUserOrganization } from '@/utils/supabase/server';
+import { createClient } from '@/utils/supabase/server';
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type');
     const baseUrl = searchParams.get('baseUrl') || 'http://localhost:3000';
+    
+    const orgId = await getUserOrganization();
+    
+    if (!orgId) {
+      return NextResponse.json({ success: false, error: 'Não autorizado.' }, { status: 401 });
+    }
+
+    const supabase = await createClient();
+    const { data: orgData } = await supabase
+      .from('organizations')
+      .select('name, logo_url')
+      .eq('id', orgId)
+      .single();
+    
+    const orgName = orgData?.name || 'CheckKids';
+    const logoUrl = orgData?.logo_url || null;
 
     if (type !== 'checkin' && type !== 'checkout') {
       return NextResponse.json(
@@ -15,8 +33,8 @@ export async function GET(request: NextRequest) {
     }
 
     const url = type === 'checkin'
-      ? `${baseUrl}/checkin`
-      : `${baseUrl}/checkout`;
+      ? `${baseUrl}/checkin?orgId=${orgId}`
+      : `${baseUrl}/checkout?orgId=${orgId}`;
 
     const qrDataUrl = await QRCode.toDataURL(url, {
       width: 400,
@@ -34,6 +52,8 @@ export async function GET(request: NextRequest) {
         type,
         url,
         qrCode: qrDataUrl,
+        orgName,
+        logoUrl,
       },
     });
   } catch (error) {
@@ -41,3 +61,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
+
+export const dynamic = 'force-dynamic';

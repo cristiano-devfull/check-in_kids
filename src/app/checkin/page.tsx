@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import type { Guardian, Child, CheckIn } from '@/lib/types';
 
 type Step = 'search' | 'register' | 'consent' | 'confirmation';
@@ -39,6 +40,9 @@ const STEPS: { key: Step; label: string }[] = [
 ];
 
 export default function CheckInPage() {
+  const searchParams = useSearchParams();
+  const orgId = searchParams.get('orgId');
+
   const [step, setStep] = useState<Step>('search');
   const [form, setForm] = useState<FormData>(INITIAL_FORM);
   const [guardian, setGuardian] = useState<Guardian | null>(null);
@@ -50,6 +54,12 @@ export default function CheckInPage() {
   const [error, setError] = useState('');
   const [consentAccepted, setConsentAccepted] = useState(false);
   const [isNewRegistration, setIsNewRegistration] = useState(false);
+
+  useEffect(() => {
+    if (!orgId) {
+      setError('ID da organização não encontrado. Por favor, escaneie o QR Code novamente.');
+    }
+  }, [orgId]);
 
   const currentStepIndex = STEPS.findIndex(s => s.key === step);
 
@@ -65,7 +75,7 @@ export default function CheckInPage() {
     try {
       const isEmail = searchQuery.includes('@');
       const param = isEmail ? `email=${encodeURIComponent(searchQuery)}` : `phone=${encodeURIComponent(searchQuery)}`;
-      const res = await fetch(`/api/guardians?${param}`);
+      const res = await fetch(`/api/guardians?${param}&org_id=${orgId}`);
       const data = await res.json();
 
       if (data.success && data.data) {
@@ -77,7 +87,7 @@ export default function CheckInPage() {
           email: data.data.email,
         }));
 
-        const childRes = await fetch(`/api/children?guardian_id=${data.data.id}`);
+        const childRes = await fetch(`/api/children?guardian_id=${data.data.id}&org_id=${orgId}`);
         const childData = await childRes.json();
         if (childData.success) {
           setChildren(childData.data);
@@ -124,6 +134,7 @@ export default function CheckInPage() {
           full_name: form.full_name,
           phone: form.phone,
           email: form.email,
+          org_id: orgId,
         }),
       });
       const guardianData = await guardianRes.json();
@@ -148,6 +159,7 @@ export default function CheckInPage() {
           medical_description: form.medical_description || undefined,
           uses_medication: form.uses_medication,
           medication_description: form.medication_description || undefined,
+          org_id: orgId,
         }),
       });
       const childData = await childRes.json();
@@ -193,6 +205,7 @@ export default function CheckInPage() {
           action: 'checkin',
           child_id: selectedChild.id,
           guardian_id: guardian.id,
+          org_id: orgId,
         }),
       });
       const data = await res.json();

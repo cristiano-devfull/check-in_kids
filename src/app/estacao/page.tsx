@@ -4,6 +4,8 @@ import { useState, useEffect, useCallback } from 'react';
 
 export default function EstacaoPage() {
   const [qrCodes, setQrCodes] = useState<{ checkin?: string; checkout?: string }>({});
+  const [orgName, setOrgName] = useState('');
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentTime, setCurrentTime] = useState('');
 
@@ -22,6 +24,13 @@ export default function EstacaoPage() {
         checkin: checkinData.data?.qrCode,
         checkout: checkoutData.data?.qrCode,
       });
+
+      if (checkinData.data?.orgName) {
+        setOrgName(checkinData.data.orgName);
+      }
+      if (checkinData.data?.logoUrl) {
+        setLogoUrl(checkinData.data.logoUrl);
+      }
     } finally {
       setLoading(false);
     }
@@ -64,10 +73,24 @@ export default function EstacaoPage() {
       {/* Header */}
       <header className="estacao-header">
         <div className="estacao-brand">
-          <span className="estacao-brand-icon" role="img" aria-label="CheckKids">🛡️</span>
+          {logoUrl ? (
+            <img 
+              src={logoUrl} 
+              alt={orgName} 
+              style={{ width: 44, height: 44, objectFit: 'contain', borderRadius: 'var(--radius-sm)' }} 
+            />
+          ) : (
+            <span className="estacao-brand-icon" role="img" aria-label="CheckKids">🛡️</span>
+          )}
           <div>
-            <div className="estacao-brand-name">Check<span>Kids</span></div>
-            <div className="estacao-brand-sub">Sistema de Controle de Entrada e Saída</div>
+            <div className="estacao-brand-name">
+              {orgName ? (
+                <> {orgName.split(' ')[0]}<span>{orgName.split(' ').slice(1).join(' ')}</span> </>
+              ) : (
+                <>Check<span>Kids</span></>
+              )}
+            </div>
+            <div className="estacao-brand-sub">Sistema de Controle de Entrada/Saída</div>
           </div>
         </div>
         <div className="estacao-clock">{currentTime}</div>

@@ -242,19 +242,31 @@ export async function processCheckOut(orgId: string, checkinId: string, guardian
     throw new Error('Apenas o responsável cadastrado pode realizar a retirada.');
   }
 
-  const { data: updated, error: updateError } = await supabase
+  console.log(`[Checkout] Iniciando para ID: ${checkinId}, Org: ${orgId}`);
+
+  const { data: updated, error: updateError, count } = await supabase
     .from('checkins')
-    .update({ checkout_time: now, status: 'completed' })
+    .update({ checkout_time: now, status: 'completed' }, { count: 'exact' })
     .eq('id', checkinId)
     .eq('organization_id', orgId)
     .select()
     .maybeSingle();
 
-  if (updateError) throw new Error(`Erro ao realizar check-out: ${updateError.message}`);
+  if (updateError) {
+    console.error(`[Checkout] Erro no banco: ${updateError.message}`);
+    throw new Error(`Erro ao realizar check-out: ${updateError.message}`);
+  }
+
+  if (count === 0) {
+    console.error(`[Checkout] Falha: Nenhuma linha afetada para ID ${checkinId} na Org ${orgId}`);
+    throw new Error('Erro crítico: O registro não pôde ser atualizado no servidor. Tente novamente.');
+  }
+
+  console.log(`[Checkout] SUCESSO para ID: ${checkinId}. Linhas afetadas: ${count}`);
 
   await logAudit(orgId, 'CHECK_OUT', 'checkins', checkinId, guardianId, `Check-out realizado`);
 
-  // Fallback if RLS prevents reading the completed row
+  // Fallback if RLS prevents reading the completed row (but we know count > 0)
   return (updated || { ...checkin, checkout_time: now, status: 'completed' }) as CheckIn;
 }
 

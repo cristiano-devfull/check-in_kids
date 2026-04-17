@@ -200,13 +200,27 @@ export async function createCheckIn(orgId: string, data: { child_id: string; gua
       unique_code: uniqueCode
     }])
     .select()
-    .single();
+    .maybeSingle();
 
   if (error) throw new Error(`Erro ao realizar check-in: ${error.message}`);
 
+  // Fallback if RLS prevents selecting the newly created row
+  const result = checkin || {
+    id,
+    organization_id: orgId,
+    child_id: data.child_id,
+    guardian_id: data.guardian_id,
+    checkin_time: now,
+    status: 'active',
+    unique_code: uniqueCode,
+    consent_accepted: true,
+    consent_timestamp: now,
+    created_at: now
+  } as CheckIn;
+
   await logAudit(orgId, 'CHECK_IN', 'checkins', id, data.guardian_id, `Check-in criado p/ criança ${data.child_id}`);
 
-  return checkin as CheckIn;
+  return result;
 }
 
 export async function processCheckOut(orgId: string, checkinId: string, guardianId: string): Promise<CheckIn> {
@@ -234,13 +248,14 @@ export async function processCheckOut(orgId: string, checkinId: string, guardian
     .eq('id', checkinId)
     .eq('organization_id', orgId)
     .select()
-    .single();
+    .maybeSingle();
 
   if (updateError) throw new Error(`Erro ao realizar check-out: ${updateError.message}`);
 
   await logAudit(orgId, 'CHECK_OUT', 'checkins', checkinId, guardianId, `Check-out realizado`);
 
-  return updated as CheckIn;
+  // Fallback if RLS prevents reading the completed row
+  return (updated || { ...checkin, checkout_time: now, status: 'completed' }) as CheckIn;
 }
 
 export async function getActiveCheckIns(orgId: string): Promise<CheckInWithDetails[]> {

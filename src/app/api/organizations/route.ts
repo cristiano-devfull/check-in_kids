@@ -11,13 +11,16 @@ export async function PATCH(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, logo_url } = body;
+    const { name, logo_url, subscription_tier, max_children, max_active_checkins } = body;
 
-    if (!name) {
-      return NextResponse.json({ success: false, error: 'O nome da organização é obrigatório.' }, { status: 400 });
-    }
+    const updateData: any = {};
+    if (name) updateData.name = name;
+    if (logo_url !== undefined) updateData.logo_url = logo_url;
+    if (subscription_tier) updateData.subscription_tier = subscription_tier;
+    if (max_children !== undefined) updateData.max_children = max_children;
+    if (max_active_checkins !== undefined) updateData.max_active_checkins = max_active_checkins;
 
-    const updated = await updateOrganization(orgId, { name, logo_url });
+    const updated = await updateOrganization(orgId, updateData);
 
     return NextResponse.json({ success: true, data: updated });
   } catch (error) {

@@ -1,8 +1,15 @@
+export type SubscriptionTier = 'free' | 'pro' | 'enterprise';
+export type SubscriptionStatus = 'active' | 'past_due' | 'canceled' | 'trialing';
+
 export interface Organization {
   id: string;
   name: string;
   slug?: string;
   logo_url?: string;
+  subscription_tier: SubscriptionTier;
+  subscription_status: SubscriptionStatus;
+  max_children?: number;
+  max_active_checkins?: number;
   created_at: string;
   updated_at: string;
 }
@@ -79,6 +86,7 @@ export interface DashboardStats {
   totalCheckinsToday: number;
   totalCheckoutsToday: number;
   activeCheckins: CheckInWithDetails[];
+  totalChildren: number;
 }
 
 export interface ApiResponse<T = unknown> {

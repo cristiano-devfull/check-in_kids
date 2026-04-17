@@ -4,13 +4,14 @@ import { useState, useEffect, useCallback } from 'react';
 import { createClient } from '@/utils/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import type { DashboardStats, CheckInWithDetails } from '@/lib/types';
+import type { DashboardStats, CheckInWithDetails, Organization } from '@/lib/types';
 
 type Tab = 'dashboard' | 'history';
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>('dashboard');
   const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [org, setOrg] = useState<Organization | null>(null);
   const [orgName, setOrgName] = useState('Painel Administrativo');
   const [history, setHistory] = useState<CheckInWithDetails[]>([]);
   const [dateFilter, setDateFilter] = useState('');
@@ -35,6 +36,7 @@ export default function AdminPage() {
       if (data.success) {
         setStats(data.data);
         if (data.orgName) setOrgName(data.orgName);
+        if (data.organization) setOrg(data.organization);
       }
     } catch {
       setError('Erro ao carregar dashboard.');
@@ -169,6 +171,59 @@ export default function AdminPage() {
           📱 Abrir Estação
         </a>
       </div>
+
+      {/* Plan Usage & Quotas */}
+      {stats && (
+        <div className="card mb-8" style={{ 
+          border: '1px solid var(--color-primary-100)', 
+          background: 'linear-gradient(135deg, #fff 0%, var(--color-primary-50) 100%)',
+          padding: 'var(--space-6)',
+          borderRadius: 'var(--radius-lg)'
+        }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 'var(--space-4)' }}>
+            <h3 style={{ fontSize: 'var(--text-sm)', fontWeight: 'bold', color: 'var(--color-primary-700)', margin: 0 }}>
+              📊 Uso do Plano: {(org?.subscription_tier || 'Grátis').toUpperCase()}
+            </h3>
+            <Link href="/admin/settings" className="btn btn-xs btn-outline" style={{ fontSize: '10px', padding: '4px 8px' }}>Gerenciar Plano</Link>
+          </div>
+          
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 'var(--space-8)' }}>
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-1)', fontSize: '11px' }}>
+                <span style={{ color: 'var(--color-text-muted)' }}>Check-ins Ativos</span>
+                <span style={{ fontWeight: 'bold', color: 'var(--color-primary-700)' }}>
+                  {stats.activeCheckins.length} / {org?.max_active_checkins || 10}
+                </span>
+              </div>
+              <div style={{ height: 6, background: 'rgba(0,0,0,0.05)', borderRadius: 3, overflow: 'hidden' }}>
+                <div style={{ 
+                  height: '100%', 
+                  background: 'var(--color-primary-500)', 
+                  width: `${Math.min(100, (stats.activeCheckins.length / (org?.max_active_checkins || 10)) * 100)}%`,
+                  transition: 'width 0.8s cubic-bezier(0.16, 1, 0.3, 1)'
+                }} />
+              </div>
+            </div>
+
+            <div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 'var(--space-1)', fontSize: '11px' }}>
+                <span style={{ color: 'var(--color-text-muted)' }}>Crianças no Banco</span>
+                <span style={{ fontWeight: 'bold', color: 'var(--color-secondary-700)' }}>
+                  {stats.totalChildren} / {org?.max_children || 50}
+                </span>
+              </div>
+              <div style={{ height: 6, background: 'rgba(0,0,0,0.05)', borderRadius: 3, overflow: 'hidden' }}>
+                <div style={{ 
+                  height: '100%', 
+                  background: 'var(--color-secondary-500)', 
+                  width: `${Math.min(100, (stats.totalChildren / (org?.max_children || 50)) * 100)}%`,
+                  transition: 'width 0.8s cubic-bezier(0.16, 1, 0.3, 1)'
+                }} />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* QR Code Toggle */}
       <div style={{ textAlign: 'center', marginBottom: 'var(--space-6)' }}>

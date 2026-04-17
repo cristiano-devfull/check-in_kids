@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import type { DashboardStats, Organization } from '@/lib/types';
 import { getDashboardStats, getOrganization } from '@/lib/services';
 import { getUserOrganization } from '@/utils/supabase/server';
 
@@ -18,7 +19,8 @@ export async function GET() {
     return NextResponse.json({ 
       success: true, 
       data: stats,
-      orgName: org?.name || 'Seu Estabelecimento'
+      orgName: org?.name || 'Seu Estabelecimento',
+      organization: org
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erro interno do servidor.';

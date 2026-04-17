@@ -133,6 +133,22 @@ export async function createChild(orgId: string, data: {
   uses_medication: boolean;
   medication_description?: string;
 }): Promise<Child> {
+  // Check for subscription quota (max_children)
+  const { data: org } = await supabase
+    .from('organizations')
+    .select('max_children')
+    .eq('id', orgId)
+    .single();
+
+  const { count: currentChildren } = await supabase
+    .from('children')
+    .select('*', { count: 'exact', head: true })
+    .eq('organization_id', orgId);
+
+  if (org?.max_children && (currentChildren || 0) >= org.max_children) {
+    throw new Error(`Limite de crianças atingido para o seu plano (${org.max_children}). Faça upgrade para cadastrar mais.`);
+  }
+
   const id = uuidv4();
   const { data: child, error } = await supabase
     .from('children')
@@ -172,6 +188,16 @@ export async function createCheckIn(orgId: string, data: { child_id: string; gua
   const id = uuidv4();
   const uniqueCode = generateUniqueCode();
   const now = new Date().toISOString();
+
+  // Check for subscription quota (max_active_checkins)
+  const [{ data: org }, { count: currentActive }] = await Promise.all([
+    supabase.from('organizations').select('max_active_checkins').eq('id', orgId).single(),
+    supabase.from('checkins').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'active')
+  ]);
+
+  if (org?.max_active_checkins && (currentActive || 0) >= org.max_active_checkins) {
+    throw new Error(`Limite de check-ins ativos simultâneos atingido (${org.max_active_checkins}). Faça upgrade para aceitar mais crianças.`);
+  }
 
   // Check for existing active check-in in THIS organization
   const { data: existing } = await supabase
@@ -349,11 +375,12 @@ export async function getCheckInHistory(orgId: string, date?: string): Promise<C
 export async function getDashboardStats(orgId: string): Promise<DashboardStats> {
   const today = new Date().toISOString().split('T')[0];
 
-  const [presentCount, todayCheckins, todayCheckouts, activeList] = await Promise.all([
+  const [presentCount, todayCheckins, todayCheckouts, activeList, childrenCount] = await Promise.all([
     supabase.from('checkins').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'active'),
     supabase.from('checkins').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).gte('checkin_time', `${today}T00:00:00Z`),
     supabase.from('checkins').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'completed').gte('checkout_time', `${today}T00:00:00Z`),
-    getActiveCheckIns(orgId)
+    getActiveCheckIns(orgId),
+    supabase.from('children').select('*', { count: 'exact', head: true }).eq('organization_id', orgId)
   ]);
 
   return {
@@ -361,6 +388,7 @@ export async function getDashboardStats(orgId: string): Promise<DashboardStats> 
     totalCheckinsToday: todayCheckins.count || 0,
     totalCheckoutsToday: todayCheckouts.count || 0,
     activeCheckins: activeList,
+    totalChildren: childrenCount.count || 0
   };
 }
 

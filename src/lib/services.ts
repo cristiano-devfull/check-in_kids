@@ -242,8 +242,6 @@ export async function processCheckOut(orgId: string, checkinId: string, guardian
     throw new Error('Apenas o responsável cadastrado pode realizar a retirada.');
   }
 
-  console.log(`[Checkout] Iniciando para ID: ${checkinId}, Org: ${orgId}`);
-
   const { data: updated, error: updateError, count } = await supabase
     .from('checkins')
     .update({ checkout_time: now, status: 'completed' }, { count: 'exact' })
@@ -252,17 +250,11 @@ export async function processCheckOut(orgId: string, checkinId: string, guardian
     .select()
     .maybeSingle();
 
-  if (updateError) {
-    console.error(`[Checkout] Erro no banco: ${updateError.message}`);
-    throw new Error(`Erro ao realizar check-out: ${updateError.message}`);
-  }
+  if (updateError) throw new Error(`Erro ao realizar check-out: ${updateError.message}`);
 
   if (count === 0) {
-    console.error(`[Checkout] Falha: Nenhuma linha afetada para ID ${checkinId} na Org ${orgId}`);
-    throw new Error('Erro crítico: O registro não pôde ser atualizado no servidor. Tente novamente.');
+    throw new Error('Não foi possível registrar a saída. O registro não foi encontrado ou já foi finalizado.');
   }
-
-  console.log(`[Checkout] SUCESSO para ID: ${checkinId}. Linhas afetadas: ${count}`);
 
   await logAudit(orgId, 'CHECK_OUT', 'checkins', checkinId, guardianId, `Check-out realizado`);
 

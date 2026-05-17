@@ -133,7 +133,8 @@ export async function createChild(orgId: string, data: {
   uses_medication: boolean;
   medication_description?: string;
 }): Promise<Child> {
-  // Check for subscription quota (max_children)
+  // Check for subscription quota (max_children) - TEMPORARILY DISABLED FOR UNLIMITED REGISTRATION
+  /*
   const { data: org } = await supabase
     .from('organizations')
     .select('max_children')
@@ -148,6 +149,7 @@ export async function createChild(orgId: string, data: {
   if (org?.max_children && (currentChildren || 0) >= org.max_children) {
     throw new Error(`Limite de crianças atingido para o seu plano (${org.max_children}). Faça upgrade para cadastrar mais.`);
   }
+  */
 
   const id = uuidv4();
   const { data: child, error } = await supabase
@@ -189,7 +191,8 @@ export async function createCheckIn(orgId: string, data: { child_id: string; gua
   const uniqueCode = generateUniqueCode();
   const now = new Date().toISOString();
 
-  // Check for subscription quota (max_active_checkins)
+  // Check for subscription quota (max_active_checkins) - TEMPORARILY DISABLED FOR UNLIMITED CHECK-INS
+  /*
   const [{ data: org }, { count: currentActive }] = await Promise.all([
     supabase.from('organizations').select('max_active_checkins').eq('id', orgId).single(),
     supabase.from('checkins').select('*', { count: 'exact', head: true }).eq('organization_id', orgId).eq('status', 'active')
@@ -198,6 +201,7 @@ export async function createCheckIn(orgId: string, data: { child_id: string; gua
   if (org?.max_active_checkins && (currentActive || 0) >= org.max_active_checkins) {
     throw new Error(`Limite de check-ins ativos simultâneos atingido (${org.max_active_checkins}). Faça upgrade para aceitar mais crianças.`);
   }
+  */
 
   // Check for existing active check-in in THIS organization
   const { data: existing } = await supabase

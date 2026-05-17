@@ -39,5 +39,17 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
-checkkids.db
-checkkids.db
+
+# database
+checkkids.db*
+*.db
+*.db-wal
+*.db-shm
+
+# local backups
+backup/
+
+# agents / AI tools
+.agent/
+.agents/
+skills-lock.json

@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import type { DashboardStats, CheckInWithDetails, Organization } from '@/lib/types';
 
-type Tab = 'dashboard' | 'history';
+type Tab = 'dashboard' | 'history' | 'children';
 
 export default function AdminPage() {
   const [tab, setTab] = useState<Tab>('dashboard');
@@ -14,6 +14,8 @@ export default function AdminPage() {
   const [org, setOrg] = useState<Organization | null>(null);
   const [orgName, setOrgName] = useState('Painel Administrativo');
   const [history, setHistory] = useState<CheckInWithDetails[]>([]);
+  const [registeredChildren, setRegisteredChildren] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -45,7 +47,6 @@ export default function AdminPage() {
     }
   }, []);
 
-
   const fetchHistory = useCallback(async () => {
     setLoading(true);
     try {
@@ -61,6 +62,23 @@ export default function AdminPage() {
       setLoading(false);
     }
   }, [dateFilter]);
+
+  const fetchRegisteredChildren = useCallback(async () => {
+    setLoading(true);
+    try {
+      const res = await fetch('/api/children');
+      const data = await res.json();
+      if (data.success) {
+        setRegisteredChildren(data.data);
+      } else {
+        setError(data.error || 'Erro ao carregar lista de crianças.');
+      }
+    } catch {
+      setError('Erro de conexão ao carregar lista de crianças.');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   const fetchQRCodes = useCallback(async () => {
     try {
@@ -87,10 +105,12 @@ export default function AdminPage() {
       fetchDashboard();
       const interval = setInterval(fetchDashboard, 15000);
       return () => clearInterval(interval);
-    } else {
+    } else if (tab === 'history') {
       fetchHistory();
+    } else if (tab === 'children') {
+      fetchRegisteredChildren();
     }
-  }, [tab, fetchDashboard, fetchHistory]);
+  }, [tab, fetchDashboard, fetchHistory, fetchRegisteredChildren]);
 
   useEffect(() => {
     fetchQRCodes();
@@ -299,6 +319,15 @@ export default function AdminPage() {
         >
           📋 Histórico
         </button>
+        <button
+          className={`tab ${tab === 'children' ? 'active' : ''}`}
+          onClick={() => setTab('children')}
+          role="tab"
+          aria-selected={tab === 'children'}
+          id="tab-children"
+        >
+          👶 Crianças Cadastradas
+        </button>
       </div>
 
       {error && (
@@ -488,6 +517,131 @@ export default function AdminPage() {
                 </table>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Children Tab */}
+      {tab === 'children' && (
+        <div style={{ animation: 'slideUp 0.4s var(--ease-out) both' }}>
+          {/* Search bar and Header */}
+          <div className="filter-bar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 'var(--space-4)', marginBottom: 'var(--space-6)' }}>
+            <div className="form-group" style={{ flex: 1, minWidth: '280px', marginBottom: 0 }}>
+              <label className="form-label" htmlFor="search-children">Buscar Criança ou Responsável</label>
+              <div style={{ position: 'relative' }}>
+                <input
+                  id="search-children"
+                  type="text"
+                  className="form-input"
+                  placeholder="Digite o nome para buscar..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{ paddingLeft: 'var(--space-8)' }}
+                />
+                <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', opacity: 0.5 }}>🔍</span>
+              </div>
+            </div>
+            {searchTerm && (
+              <button
+                className="btn btn-outline"
+                onClick={() => setSearchTerm('')}
+                style={{ marginBottom: 0, minHeight: '52px' }}
+              >
+                Limpar Busca
+              </button>
+            )}
+          </div>
+
+          <div className="card card-elevated">
+            <h3 style={{ marginBottom: 'var(--space-4)' }}>
+              👶 Crianças Cadastradas no Banco ({registeredChildren.length})
+            </h3>
+
+            {loading ? (
+              <div className="loading-screen">
+                <div className="spinner" />
+                <p>Carregando crianças cadastradas...</p>
+              </div>
+            ) : (() => {
+              const filteredList = registeredChildren.filter(child => {
+                const searchLower = searchTerm.toLowerCase();
+                const childName = (child.name || '').toLowerCase();
+                const guardianName = (child.guardians?.full_name || '').toLowerCase();
+                return childName.includes(searchLower) || guardianName.includes(searchLower);
+              });
+
+              if (filteredList.length === 0) {
+                return (
+                  <div className="empty-state">
+                    <div className="empty-state-icon">📭</div>
+                    <h3>Nenhuma criança encontrada</h3>
+                    <p>{searchTerm ? 'Experimente buscar por outro nome' : 'Nenhuma criança cadastrada ainda nesta organização'}</p>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="table-container">
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Criança</th>
+                        <th>Responsável</th>
+                        <th>Status Clínico</th>
+                        <th>Data de Cadastro</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredList.map((child, index) => (
+                        <tr key={child.id} style={{ animation: `slideIn 0.3s var(--ease-out) ${index * 0.03}s both` }}>
+                          <td>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-3)' }}>
+                              <span style={{ fontSize: '20px' }}>
+                                {child.gender === 'male' ? '👦' : child.gender === 'female' ? '👧' : '🧒'}
+                              </span>
+                              <div>
+                                <div style={{ fontWeight: 700, fontFamily: 'var(--font-display)' }}>{child.name}</div>
+                                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>{child.age} anos</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td>
+                            {child.guardians ? (
+                              <>
+                                <div style={{ fontWeight: 600 }}>{child.guardians.full_name}</div>
+                                <div style={{ fontSize: 'var(--text-xs)', color: 'var(--color-text-muted)' }}>{child.guardians.phone}</div>
+                              </>
+                            ) : (
+                              <span style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-xs)' }}>Não associado</span>
+                            )}
+                          </td>
+                          <td>
+                            <div style={{ display: 'flex', gap: 'var(--space-1)', flexWrap: 'wrap' }}>
+                              {child.has_medical_condition ? (
+                                <span className="badge badge-active" style={{ background: '#FFF3CD', color: '#856404', border: '1px solid #FFEBAA' }} title={child.medical_description}>
+                                  ⚠️ Condição Médica
+                                </span>
+                              ) : null}
+                              {child.uses_medication ? (
+                                <span className="badge badge-active" style={{ background: '#E8F4FD', color: '#004085', border: '1px solid #BEE5EB' }} title={child.medication_description}>
+                                  💊 Medicamento
+                                </span>
+                              ) : null}
+                              {!child.has_medical_condition && !child.uses_medication ? (
+                                <span style={{ color: 'var(--color-text-muted)', fontSize: 'var(--text-sm)' }}>Sem restrições</span>
+                              ) : null}
+                            </div>
+                          </td>
+                          <td style={{ fontSize: 'var(--text-sm)' }}>
+                            {child.created_at ? new Date(child.created_at).toLocaleDateString('pt-BR') : '—'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })()}
           </div>
         </div>
       )}

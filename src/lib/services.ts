@@ -431,3 +431,22 @@ export async function getAuditLogs(orgId: string, limit = 100): Promise<AuditLog
   if (error || !data) return [];
   return data as AuditLog[];
 }
+
+export async function getChildrenWithGuardians(orgId: string): Promise<any[]> {
+  const { data, error } = await supabase
+    .from('children')
+    .select(`
+      *,
+      guardians (
+        full_name,
+        phone,
+        email
+      )
+    `)
+    .eq('organization_id', orgId)
+    .order('name', { ascending: true });
+  
+  if (error || !data) return [];
+  return data;
+}
+

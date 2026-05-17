@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createChild, getChildrenByGuardian, updateChild } from '@/lib/services';
+import { createChild, getChildrenByGuardian, updateChild, getChildrenWithGuardians } from '@/lib/services';
 import { getUserOrganization } from '@/utils/supabase/server';
 
 export async function POST(request: NextRequest) {
@@ -52,12 +52,13 @@ export async function GET(request: NextRequest) {
        return NextResponse.json({ success: false, error: 'Organização não identificada.' }, { status: 400 });
     }
 
-    if (!guardianId) {
-      return NextResponse.json({ success: false, error: 'ID do responsável é necessário.' }, { status: 400 });
+    if (guardianId) {
+      const children = await getChildrenByGuardian(orgId, guardianId);
+      return NextResponse.json({ success: true, data: children });
+    } else {
+      const children = await getChildrenWithGuardians(orgId);
+      return NextResponse.json({ success: true, data: children });
     }
-
-    const children = await getChildrenByGuardian(orgId, guardianId);
-    return NextResponse.json({ success: true, data: children });
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Erro interno do servidor.';
     return NextResponse.json({ success: false, error: message }, { status: 500 });

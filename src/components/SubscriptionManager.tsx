@@ -38,6 +38,12 @@ export default function SubscriptionManager({ org, onUpdate }: SubscriptionManag
   const handleUpgrade = async (tier: SubscriptionTier) => {
     if (tier === org.subscription_tier) return;
 
+    if (tier !== 'free') {
+      // TODO: Substituir por sua URL real de pagamento via Pix (MercadoPago, Kiwify, Asaas, etc)
+      window.open(`https://sua-url-de-pagamento.com/pix?plano=${tier}`, '_blank');
+      return;
+    }
+
     setLoading(tier);
     try {
       const res = await fetch('/api/organizations', {

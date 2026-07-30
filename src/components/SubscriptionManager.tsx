@@ -20,7 +20,7 @@ const PLAN_DETAILS = {
     name: 'Pro',
     price: 'R$ 97',
     description: 'Para estabelecimentos em crescimento.',
-    features: ['Até 50 check-ins ativos', 'Até 500 crianças no banco', 'Personalização de Logo', 'Relatórios Mensais'],
+    features: ['Até 100 check-ins ativos', 'Até 500 crianças no banco', 'Personalização de Logo', 'Relatórios Mensais'],
     color: 'var(--color-secondary-500)',
   },
   enterprise: {
@@ -37,15 +37,15 @@ export default function SubscriptionManager({ org, onUpdate }: SubscriptionManag
 
   const handleUpgrade = async (tier: SubscriptionTier) => {
     if (tier === org.subscription_tier) return;
-    
+
     setLoading(tier);
     try {
       const res = await fetch('/api/organizations', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           subscription_tier: tier,
-          max_active_checkins: tier === 'free' ? 10 : tier === 'pro' ? 50 : 999999,
+          max_active_checkins: tier === 'free' ? 10 : tier === 'pro' ? 100 : 999999,
           max_children: tier === 'free' ? 50 : tier === 'pro' ? 500 : 999999,
         }),
       });
@@ -88,11 +88,11 @@ export default function SubscriptionManager({ org, onUpdate }: SubscriptionManag
           const isCurrent = tier === org.subscription_tier;
 
           return (
-            <div 
-              key={tier} 
+            <div
+              key={tier}
               className={`card ${isCurrent ? 'card-active' : ''}`}
-              style={{ 
-                display: 'flex', 
+              style={{
+                display: 'flex',
                 flexDirection: 'column',
                 padding: 'var(--space-6)',
                 background: '#fff',

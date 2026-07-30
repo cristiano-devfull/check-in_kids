@@ -6,7 +6,7 @@ Este documento detalha a implementação de níveis de serviço para monetizar a
 
 | Recurso | **Grátis** | **Pro** | **Enterprise** |
 | :--- | :--- | :--- | :--- |
-| **Check-ins Ativos** | Até 10 simultâneos | Até 50 simultâneos | Ilimitado |
+| **Check-ins Ativos** | Até 10 simultâneos | Até 100 simultâneos | Ilimitado |
 | **Crianças no Banco** | Até 50 cadastradas | Até 500 cadastradas | Ilimitado |
 | **Personalização** | Logo padrão | Logo personalizada | White-label completo |
 | **Relatórios** | Últimos 7 dias | Histórico completo | Exportação Avançada |
